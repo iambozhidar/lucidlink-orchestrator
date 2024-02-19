@@ -10,5 +10,10 @@
     "type": "git",
     "url": "https://github.com/iambozhidar/lucidlink-orchestrator.git"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@aws-sdk/client-ec2": "^3.515.0",
+    "@aws-sdk/client-iam": "^3.515.0",
+    "@aws-sdk/client-ssm": "^3.515.0"
+  }
 }

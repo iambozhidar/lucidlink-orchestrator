@@ -1,5 +1,3 @@
-// const AWS = require('aws-sdk');
-
 const { EC2 } = require('@aws-sdk/client-ec2');
 const { IAM } = require('@aws-sdk/client-iam');
 const { SSM } = require('@aws-sdk/client-ssm');
@@ -10,12 +8,6 @@ const { SSM } = require('@aws-sdk/client-ssm');
 // program
 //   .option('-o, --output', 'Output "Hello" content in console')
 //   .parse(process.argv);
-
-// AWS configuration
-// const awsConfig = {
-//   region: 'eu-north-1'
-// };
-// AWS.config.update(awsConfig);
 
 const awsRegion = 'eu-north-1'; 
 
@@ -89,7 +81,7 @@ async function createSSMRole() {
 async function startChildInstance(instanceProfileName) {
   const userDataScript = `#!/bin/bash
 echo "Hello" > child-parameter.txt
-aws ssm put-parameter --name "/child/parameter7" --value "Hello" --type "String" --overwrite`;
+aws ssm put-parameter --name "/child/parameter10" --value "parameter10" --type "String" --overwrite`;
   const params = {
     MaxCount: 1,
     MinCount: 1,
@@ -136,9 +128,9 @@ async function run() {
     const instanceId = await startChildInstance('orchestrator');
     console.log('Child EC2 instance started:', instanceId);
 
-    const parameterValue = await waitForParameter('/child/parameter7');
+    const parameterValue = await waitForParameter('/child/parameter10');
     // if (program.output) {
-    console.log('Hello:', parameterValue);
+    console.log('Result:', parameterValue);
     // } else {
     //   console.log('Goodbye:', parameterValue);    	
     // }
