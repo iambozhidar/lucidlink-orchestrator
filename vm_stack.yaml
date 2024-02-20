@@ -1,3 +1,8 @@
+Parameters:
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of Subnet IDs for the Auto Scaling Group
+
 Resources:
 
   ChildRole:
@@ -27,25 +32,35 @@ Resources:
       Roles:
         - Ref: ChildRole
 
-  MyEC2Instance:
-    Type: AWS::EC2::Instance
+  MyAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref MyLaunchConfiguration
+      MinSize: '3'
+      MaxSize: '3'
+      DesiredCapacity: '3'
+      VPCZoneIdentifier:
+        Ref: SubnetIds
+      Tags:
+        - Key: Name
+          Value: ChildEC2Instance
+          PropagateAtLaunch: true
+
+  MyLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: "ami-087c4d241dd19276d"
       InstanceType: "t3.micro"
-      IamInstanceProfile:
-        Ref: ChildInstanceProfile
-      KeyName: "key-pair_default" # TODO: can this be a default (no key) value?
+      IamInstanceProfile: !Ref ChildInstanceProfile
+      KeyName: "key-pair_default"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           instance_id=$(ec2-metadata -i | cut -d " " -f 2)
           aws ssm put-parameter --name $instance_id --value "Hey from child instance" --type "String" --overwrite
-      NetworkInterfaces:
-        - DeviceIndex: "0"
-          AssociatePublicIpAddress: "true"
-#      SubnetId: "your-subnet-id" # Replace with your subnet ID
 #      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed? what about autoscaling group?
+
 Outputs:
-  MyEC2InstanceId:
-    Description: "Instance ID of the EC2 instance"
-    Value: !Ref MyEC2Instance
+  AutoScalingGroupName:
+    Description: The name of the Auto Scaling Group
+    Value: !Ref MyAutoScalingGroup

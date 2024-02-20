@@ -1,4 +1,5 @@
 const {SSMClient, GetParameterCommand, DeleteParameterCommand} = require("@aws-sdk/client-ssm");
+const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/client-auto-scaling");
 const {
     CloudFormationClient,
     CreateStackCommand,
@@ -19,10 +20,15 @@ const path = require("path");
 const awsRegion = 'eu-north-1';
 const ssmClient = new SSMClient({region: awsRegion});
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
+const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
 const templateFilePath = path.join(__dirname, "vm_stack.yaml"); // Replace with your actual file path
 const stackName = "ChildStack";
 const parameterName = '/child/parameter20';
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function waitForParameter(parameterName) {
     while (true) {
@@ -35,7 +41,7 @@ async function waitForParameter(parameterName) {
             return Parameter.Value;
         } catch (error) {
             console.log('Parameter not yet set by child instance:', parameterName);
-            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds before checking again
+            await sleep(5000); // Wait for 5 seconds before checking again
         }
     }
 }
@@ -57,16 +63,21 @@ async function deleteParameter(parameterName) {
 }
 
 async function launchStack() {
-    // Read the CloudFormation template
-    const templateBody = fs.readFileSync(templateFilePath, "utf8");
-
     // Create the CloudFormation stack
     const createStackCommand = new CreateStackCommand({
         StackName: stackName,
-        TemplateBody: templateBody,
+        TemplateBody: fs.readFileSync(templateFilePath, "utf8"),
         Capabilities: ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"], // Required for creating IAM resources and named IAM resources
         OnFailure: "DELETE",
+        Parameters: [
+            {
+                ParameterKey: 'SubnetIds',
+                ParameterValue: 'subnet-0452da87538fae7c7,subnet-0cf3f0a9576ebfa01,subnet-0da8959263bb945b7' //TODO get subnets from CLI param
+            }
+        ]
     });
+
+    //TODO: make try/catch clauses consistent -> should all functions have them or should the parent call handle them?
 
     const response = await cloudFormationClient.send(createStackCommand);
     console.log("CloudFormation Stack creation initiated. Stack ID:", response.StackId);
@@ -80,23 +91,23 @@ async function waitForStackCompletion() {
         stackStatus = Stacks[0].StackStatus;
         if (stackStatus === "CREATE_COMPLETE") {
             console.log(`Stack ${stackName} creation complete.`);
-            break;
+            console.log('Stack object:', Stacks[0])
+            return Stacks[0].Outputs.find(output => output.OutputKey === "AutoScalingGroupName").OutputValue;
         } else if (stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE") {
             throw new Error(`Stack creation failed: ${stackStatus}`);
         }
-        await new Promise(resolve => setTimeout(resolve, 5000)); // TODO: isn't there a better way to wait for 5 secs? also, export this in a reusable function?
+        await sleep(5000); // TODO: isn't there a better way to wait for 5 secs? also, export this in a reusable function?
     }
 }
 
-async function getEC2InstanceIDFromStack() {
-    const {StackResources} = await cloudFormationClient.send(new DescribeStackResourcesCommand({StackName: stackName}));
-    const instanceResource = StackResources.find(resource => resource.ResourceType === "AWS::EC2::Instance");
-    if (instanceResource) {
-        console.log(`EC2 Instance ID: ${instanceResource.PhysicalResourceId}`);
-        return instanceResource.PhysicalResourceId;
-    } else {
-        throw new Error("EC2 Instance ID not found in stack resources.");
-    }
+async function getEC2InstanceIDFromStack(asgName) {
+    // Retrieve all the stack resources
+    const {AutoScalingGroups} = await autoScalingClient.send(new DescribeAutoScalingGroupsCommand({
+        AutoScalingGroupNames: [asgName],
+    }));
+    const instanceIds = AutoScalingGroups[0].Instances.map(instance => instance.InstanceId);
+    console.log("Instance IDs:", instanceIds);
+    return instanceIds;
 }
 
 async function deleteStack() {
@@ -116,19 +127,21 @@ async function deleteStack() {
 async function run() {
     try {
         await launchStack();
-        await waitForStackCompletion();
-        const instanceId = await getEC2InstanceIDFromStack();
-        console.log('Child EC2 instance started:', instanceId);
+        const asgName = await waitForStackCompletion();
+        const instanceIds = await getEC2InstanceIDFromStack(asgName);
+        console.log('EC2 instance ids started:', instanceIds);
 
-        const parameterValue = await waitForParameter(instanceId);
-        // if (program.output) {
-        console.log('Result:', parameterValue);
-        // } else {
-        //   console.log('Goodbye:', parameterValue);
-        // }
+        // Create a promise for each instance ID to wait for its parameter
+        const parameterPromises = instanceIds.map(instanceId => waitForParameter(instanceId));
+        // Wait for all parameters to be retrieved
+        const parameterValues = await Promise.all(parameterPromises);
+        // Print all retrieved parameter values
+        console.log('Parameter values from all instances:', parameterValues);
 
-        await deleteParameter(instanceId);
-        console.log('SSM parameter deleted');
+        // Assuming you want to delete all parameters after retrieval
+        const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
+        // Wait for all parameters to be deleted
+        await Promise.all(deleteParameterPromises);
 
         await deleteStack();
         console.log('CloudFormation stack deleted');
