@@ -1,0 +1,65 @@
+Resources:
+  SsmPutParameterPolicy: # TODO: this is redundant?
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SsmPutParameterPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "ssm:PutParameter"
+            Resource: "*"
+      Roles:
+        - Ref: ChildRole
+
+  ChildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "ec2.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+#      ManagedPolicyArns:
+#        - "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" # Optional: Attach additional managed policies
+      Policies:
+        - PolicyName: InlinePolicyForSsmPutParameter
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "ssm:PutParameter"
+                Resource: "*"
+
+  ChildInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - Ref: ChildRole
+
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-087c4d241dd19276d"
+      InstanceType: "t3.micro"
+      IamInstanceProfile:
+        Ref: ChildInstanceProfile
+      KeyName: "key-pair_default" # TODO: can this be a default (no key) value?
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo "Hello" > child-parameter20.txt
+          aws ssm put-parameter --name "/child/parameter20" --value "parameter20" --type "String" --overwrite
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: "true"
+#          SubnetId: "your-subnet-id" # Replace with your subnet ID
+          SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed? what about autoscaling group?
+Outputs:
+  MyEC2InstanceId:
+    Description: "Instance ID of the EC2 instance"
+    Value: !Ref MyEC2Instance
