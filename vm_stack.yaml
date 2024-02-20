@@ -38,8 +38,8 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          echo "Hello" > child-parameter20.txt
-          aws ssm put-parameter --name "/child/parameter20" --value "Hey from child instance" --type "String" --overwrite
+          instance_id=$(ec2-metadata -i | cut -d " " -f 2)
+          aws ssm put-parameter --name $instance_id --value "Hey from child instance" --type "String" --overwrite
       NetworkInterfaces:
         - DeviceIndex: "0"
           AssociatePublicIpAddress: "true"

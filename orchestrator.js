@@ -120,14 +120,14 @@ async function run() {
         const instanceId = await getEC2InstanceIDFromStack();
         console.log('Child EC2 instance started:', instanceId);
 
-        const parameterValue = await waitForParameter(parameterName);
+        const parameterValue = await waitForParameter(instanceId);
         // if (program.output) {
         console.log('Result:', parameterValue);
         // } else {
         //   console.log('Goodbye:', parameterValue);
         // }
 
-        await deleteParameter(parameterName);
+        await deleteParameter(instanceId);
         console.log('SSM parameter deleted');
 
         await deleteStack();
