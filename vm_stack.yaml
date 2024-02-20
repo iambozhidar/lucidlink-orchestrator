@@ -57,8 +57,8 @@ Resources:
       NetworkInterfaces:
         - DeviceIndex: "0"
           AssociatePublicIpAddress: "true"
-#          SubnetId: "your-subnet-id" # Replace with your subnet ID
-          SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed? what about autoscaling group?
+#      SubnetId: "your-subnet-id" # Replace with your subnet ID
+#      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed? what about autoscaling group?
 Outputs:
   MyEC2InstanceId:
     Description: "Instance ID of the EC2 instance"
