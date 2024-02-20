@@ -1,16 +1,4 @@
 Resources:
-  SsmPutParameterPolicy: # TODO: this is redundant?
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: SsmPutParameterPolicy
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action: "ssm:PutParameter"
-            Resource: "*"
-      Roles:
-        - Ref: ChildRole
 
   ChildRole:
     Type: AWS::IAM::Role
@@ -23,8 +11,6 @@ Resources:
               Service: "ec2.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
-#      ManagedPolicyArns:
-#        - "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" # Optional: Attach additional managed policies
       Policies:
         - PolicyName: InlinePolicyForSsmPutParameter
           PolicyDocument:
