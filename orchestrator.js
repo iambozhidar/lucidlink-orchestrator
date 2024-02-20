@@ -1,5 +1,11 @@
 const {SSMClient, GetParameterCommand, DeleteParameterCommand} = require("@aws-sdk/client-ssm");
-const {CloudFormationClient, CreateStackCommand, DeleteStackCommand} = require("@aws-sdk/client-cloudformation");
+const {
+    CloudFormationClient,
+    CreateStackCommand,
+    DeleteStackCommand,
+    DescribeStacksCommand,
+    DescribeStackResourcesCommand
+} = require("@aws-sdk/client-cloudformation");
 const fs = require("fs");
 const path = require("path");
 
@@ -59,17 +65,38 @@ async function launchStack() {
         StackName: stackName,
         TemplateBody: templateBody,
         Capabilities: ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"], // Required for creating IAM resources and named IAM resources
-        OnFailure: "DELETE", // Specifies what action to take if stack creation fails
+        OnFailure: "DELETE",
     });
 
     const response = await cloudFormationClient.send(createStackCommand);
     console.log("CloudFormation Stack creation initiated. Stack ID:", response.StackId);
     console.log("Response:", response);
+}
 
-    // const outputs = response.Stacks[0].Outputs;
-    // const instanceIdOutput = outputs.find(output => output.OutputKey === "MyEC2InstanceId");
-    // return instanceIdOutput ? instanceIdOutput.OutputValue : null;
-    return null;
+async function waitForStackCompletion() {
+    let stackStatus = "CREATE_IN_PROGRESS";
+    while (stackStatus === "CREATE_IN_PROGRESS") {
+        const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: stackName}));
+        stackStatus = Stacks[0].StackStatus;
+        if (stackStatus === "CREATE_COMPLETE") {
+            console.log(`Stack ${stackName} creation complete.`);
+            break;
+        } else if (stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE") {
+            throw new Error(`Stack creation failed: ${stackStatus}`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 5000)); // TODO: isn't there a better way to wait for 5 secs? also, export this in a reusable function?
+    }
+}
+
+async function getEC2InstanceIDFromStack() {
+    const {StackResources} = await cloudFormationClient.send(new DescribeStackResourcesCommand({StackName: stackName}));
+    const instanceResource = StackResources.find(resource => resource.ResourceType === "AWS::EC2::Instance");
+    if (instanceResource) {
+        console.log(`EC2 Instance ID: ${instanceResource.PhysicalResourceId}`);
+        return instanceResource.PhysicalResourceId;
+    } else {
+        throw new Error("EC2 Instance ID not found in stack resources.");
+    }
 }
 
 async function deleteStack() {
@@ -88,7 +115,9 @@ async function deleteStack() {
 
 async function run() {
     try {
-        const instanceId = await launchStack();
+        await launchStack();
+        await waitForStackCompletion();
+        const instanceId = await getEC2InstanceIDFromStack();
         console.log('Child EC2 instance started:', instanceId);
 
         const parameterValue = await waitForParameter(parameterName);
