@@ -6,26 +6,26 @@ const {
     DeleteStackCommand,
     DescribeStacksCommand
 } = require("@aws-sdk/client-cloudformation");
+
 const fs = require("fs");
 const path = require("path");
+// load .env variables
+require('dotenv').config();
 
-// const program = require('commander');
+const awsRegion = process.env.AWS_REGION;
+const subnetIds = process.env.SUBNET_IDS;
+const numberOfVMs = parseInt(process.env.NUMBER_OF_VMS, 10);
+const amiId = process.env.AMI_ID;
+const instanceType = process.env.INSTANCE_TYPE;
 
-// Configure command-line options
-// program
-//   .option('-o, --output', 'Output "Hello" content in console')
-//   .parse(process.argv);
-
-const awsRegion = 'eu-north-1';
 const ssmClient = new SSMClient({region: awsRegion});
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
 const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
-const templateFilePath = path.join(__dirname, "vm_stack.yaml"); // Replace with your actual file path
+const templateFilePath = path.join(__dirname, "vm_stack.yaml");
 const stackName = "ChildStack";
-const parameterName = '/child/parameter20';
 
-function sleep(ms) {
+function sleep(ms) { //TODO: rework this to 'retry' and include try/catch logic
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -39,7 +39,7 @@ async function waitForParameter(parameterName) {
             const {Parameter} = await ssmClient.send(params);
             return Parameter.Value;
         } catch (error) {
-            console.log('Parameter not yet set by child instance:', parameterName);
+            //TODO: when does this end and we consider it as a fatal error?
             await sleep(5000); // Wait for 5 seconds before checking again
         }
     }
@@ -69,7 +69,19 @@ async function launchStack() {
         Parameters: [
             {
                 ParameterKey: 'SubnetIds',
-                ParameterValue: 'subnet-0452da87538fae7c7,subnet-0cf3f0a9576ebfa01,subnet-0da8959263bb945b7' //TODO get subnets from CLI param
+                ParameterValue: subnetIds
+            },
+            {
+                ParameterKey: "AMIId",
+                ParameterValue: amiId
+            },
+            {
+                ParameterKey: "InstanceType",
+                ParameterValue: instanceType
+            },
+            {
+                ParameterKey: "NumberOfVMs",
+                ParameterValue: numberOfVMs.toString() // Convert number to string TODO: do I need this?
             }
         ]
     });
@@ -136,8 +148,8 @@ async function run() {
         await launchStack();
         const asgName = await waitForStackCompletion();
         const instanceIds = await getEC2InstanceIDFromStack(asgName);
-        console.log('EC2 instances with the following ids:', instanceIds);
 
+        console.log('Waiting for results from EC2 instances with the ids:', instanceIds);
         // Create a promise for each instance ID to wait for its parameter
         const parameterPromises = instanceIds.map(instanceId => waitForParameter(instanceId));
         // Wait for all parameters to be retrieved

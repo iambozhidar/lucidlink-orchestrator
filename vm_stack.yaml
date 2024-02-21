@@ -2,6 +2,15 @@ Parameters:
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: List of Subnet IDs for the Auto Scaling Group
+  AMIId:
+    Type: String
+    Description: AMI ID for the instances
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+  NumberOfVMs:
+    Type: Number
+    Description: Number of VM instances to launch
 
 Resources:
 
@@ -36,9 +45,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref MyLaunchConfiguration
-      MinSize: '3'
-      MaxSize: '3'
-      DesiredCapacity: '3'
+      MinSize: !Ref NumberOfVMs
+      MaxSize: !Ref NumberOfVMs
+      DesiredCapacity: !Ref NumberOfVMs
       VPCZoneIdentifier:
         Ref: SubnetIds
       Tags:
@@ -49,16 +58,16 @@ Resources:
   MyLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: "ami-087c4d241dd19276d"
-      InstanceType: "t3.micro"
+      ImageId: !Ref AMIId
+      InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref ChildInstanceProfile
-      KeyName: "key-pair_default"
+      KeyName: "key-pair_default" # TODO: remove? or pass it as a parameter
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           instance_id=$(ec2-metadata -i | cut -d " " -f 2)
           aws ssm put-parameter --name $instance_id --value "320,1000,3000" --type "String" --overwrite
-#      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed? what about autoscaling group?
+#      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed?
 
 Outputs:
   AutoScalingGroupName:
