@@ -29,34 +29,36 @@ function sleep(ms) { //TODO: rework this to 'retry' and include try/catch logic
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForParameter(parameterName) {
+async function retryUntilDone(intervalMs, execute) {
     while (true) {
-        const params = new GetParameterCommand({
-            Name: parameterName,
-            WithDecryption: false
-        });
         try {
-            const {Parameter} = await ssmClient.send(params);
-            return Parameter.Value;
+            return execute();
         } catch (error) {
             //TODO: when does this end and we consider it as a fatal error?
-            await sleep(5000); // Wait for 5 seconds before checking again
+            await sleep(5000);
         }
     }
 }
 
-async function deleteParameter(parameterName) {
-    const deleteParams = {
-        Name: parameterName
-    };
+async function waitForParameter(parameterName) {
+    return await retryUntilDone(5000, async () => {
+        const params = new GetParameterCommand({
+            Name: parameterName,
+            WithDecryption: false
+        });
+        const {Parameter} = await ssmClient.send(params);
+        return Parameter.Value;
+    });
+}
 
-    try {
+async function deleteParameter(parameterName) {
+    return await retryUntilDone(5000, async () => {
+        const deleteParams = {
+            Name: parameterName
+        };
         const deleteCommand = new DeleteParameterCommand(deleteParams);
-        return await ssmClient.send(deleteCommand); // The response is usually empty for a successful delete operation
-    } catch (error) {
-        console.error(`Error deleting parameter: ${parameterName}`, error);
-        throw error; // Rethrow or handle the error based on your application's needs
-    }
+        await ssmClient.send(deleteCommand);
+    });
 }
 
 async function launchStack() {
@@ -81,7 +83,7 @@ async function launchStack() {
             },
             {
                 ParameterKey: "NumberOfVMs",
-                ParameterValue: numberOfVMs.toString() // Convert number to string TODO: do I need this?
+                ParameterValue: numberOfVMs
             }
         ]
     });
@@ -146,10 +148,11 @@ class MachineResults {
 async function run() {
     try {
         await launchStack();
+        console.log('Waiting for stack completion...');
         const asgName = await waitForStackCompletion();
         const instanceIds = await getEC2InstanceIDFromStack(asgName);
 
-        console.log('Waiting for results from EC2 instances with the ids:', instanceIds);
+        console.log('Waiting for results from EC2 instances: ', instanceIds);
         // Create a promise for each instance ID to wait for its parameter
         const parameterPromises = instanceIds.map(instanceId => waitForParameter(instanceId));
         // Wait for all parameters to be retrieved
@@ -174,12 +177,14 @@ async function run() {
             });
         }
 
+        console.log('Performing cleanup...');
         // Assuming you want to delete all parameters after retrieval
         const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
         // Wait for all parameters to be deleted
         await Promise.all(deleteParameterPromises);
 
         await deleteStack();
+        // TODO: await delete completion?
         console.log('Cleanup done');
     } catch (error) {
         console.error('Error:', error);
