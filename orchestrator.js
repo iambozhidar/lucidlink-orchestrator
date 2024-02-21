@@ -4,8 +4,7 @@ const {
     CloudFormationClient,
     CreateStackCommand,
     DeleteStackCommand,
-    DescribeStacksCommand,
-    DescribeStackResourcesCommand
+    DescribeStacksCommand
 } = require("@aws-sdk/client-cloudformation");
 const fs = require("fs");
 const path = require("path");
@@ -81,7 +80,6 @@ async function launchStack() {
 
     const response = await cloudFormationClient.send(createStackCommand);
     console.log("CloudFormation Stack creation initiated. Stack ID:", response.StackId);
-    console.log("Response:", response);
 }
 
 async function waitForStackCompletion() {
@@ -91,7 +89,6 @@ async function waitForStackCompletion() {
         stackStatus = Stacks[0].StackStatus;
         if (stackStatus === "CREATE_COMPLETE") {
             console.log(`Stack ${stackName} creation complete.`);
-            console.log('Stack object:', Stacks[0])
             return Stacks[0].Outputs.find(output => output.OutputKey === "AutoScalingGroupName").OutputValue;
         } else if (stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE") {
             throw new Error(`Stack creation failed: ${stackStatus}`);
