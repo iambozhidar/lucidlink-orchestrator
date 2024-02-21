@@ -52,9 +52,7 @@ async function deleteParameter(parameterName) {
 
     try {
         const deleteCommand = new DeleteParameterCommand(deleteParams);
-        const response = await ssmClient.send(deleteCommand);
-        console.log(`Parameter deleted successfully: ${parameterName}`, response);
-        return response; // The response is usually empty for a successful delete operation
+        return await ssmClient.send(deleteCommand); // The response is usually empty for a successful delete operation
     } catch (error) {
         console.error(`Error deleting parameter: ${parameterName}`, error);
         throw error; // Rethrow or handle the error based on your application's needs
@@ -102,9 +100,7 @@ async function getEC2InstanceIDFromStack(asgName) {
     const {AutoScalingGroups} = await autoScalingClient.send(new DescribeAutoScalingGroupsCommand({
         AutoScalingGroupNames: [asgName],
     }));
-    const instanceIds = AutoScalingGroups[0].Instances.map(instance => instance.InstanceId);
-    console.log("Instance IDs:", instanceIds);
-    return instanceIds;
+    return AutoScalingGroups[0].Instances.map(instance => instance.InstanceId);
 }
 
 async function deleteStack() {
@@ -113,11 +109,25 @@ async function deleteStack() {
     });
 
     try {
-        const response = await cloudFormationClient.send(deleteCommand);
-        console.log(`Stack deletion initiated for ${stackName}`, response);
-        // Note: The response from DeleteStackCommand is usually empty, indicating the request was received.
+        await cloudFormationClient.send(deleteCommand);
     } catch (error) {
         console.error("Error deleting stack:", error);
+    }
+}
+
+function parseDelimitedStringToObject(delimitedString) {
+    const values = delimitedString.split(',');
+    const creationTimeMs = parseInt(values[0], 10);
+    const copyTimeMs = parseInt(values[1], 10);
+    const deletionTimeMs = parseInt(values[2], 10);
+    return new MachineResults(creationTimeMs, copyTimeMs, deletionTimeMs);
+}
+
+class MachineResults {
+    constructor(creationTimeMs, copyTimeMs, deletionTimeMs) {
+        this.creationTimeMs = creationTimeMs;
+        this.copyTimeMs = copyTimeMs;
+        this.deletionTimeMs = deletionTimeMs;
     }
 }
 
@@ -126,14 +136,31 @@ async function run() {
         await launchStack();
         const asgName = await waitForStackCompletion();
         const instanceIds = await getEC2InstanceIDFromStack(asgName);
-        console.log('EC2 instance ids started:', instanceIds);
+        console.log('EC2 instances with the following ids:', instanceIds);
 
         // Create a promise for each instance ID to wait for its parameter
         const parameterPromises = instanceIds.map(instanceId => waitForParameter(instanceId));
         // Wait for all parameters to be retrieved
         const parameterValues = await Promise.all(parameterPromises);
-        // Print all retrieved parameter values
-        console.log('Parameter values from all instances:', parameterValues);
+        // const parameterValues = ["100,200,300", "110,320,4200", "239,123,41243"];
+        const parameterObjects = parameterValues.map(string => parseDelimitedStringToObject(string));
+
+        // print results
+        const jsonOutput = process.argv.includes('--json');
+        if (jsonOutput) {
+            console.log('Printing results in JSON format:');
+            console.log(JSON.stringify(parameterObjects, null, 2));
+        } else {
+            console.log('Printing results in human-readable format:');
+            parameterObjects.forEach((results, index) => {
+                console.log(
+                    `Machine ${index + 1} Results:
+- Creation Time: ${results.creationTimeMs} ms
+- Copy Time:     ${results.copyTimeMs} ms
+- Deletion Time: ${results.deletionTimeMs} ms`
+                );
+            });
+        }
 
         // Assuming you want to delete all parameters after retrieval
         const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
@@ -141,7 +168,7 @@ async function run() {
         await Promise.all(deleteParameterPromises);
 
         await deleteStack();
-        console.log('CloudFormation stack deleted');
+        console.log('Cleanup done');
     } catch (error) {
         console.error('Error:', error);
     }
