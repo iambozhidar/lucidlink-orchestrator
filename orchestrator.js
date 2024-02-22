@@ -166,7 +166,7 @@ async function run() {
         // const parameterValues = ["100,200,300", "110,320,4200", "239,123,41243"];
         const parameterObjects = parameterValues.map(string => parseDelimitedStringToObject(string));
 
-        console.log('Performing cleanup...');
+        console.log('Shutting down VMs and deleting resources...');
         // Assuming you want to delete all parameters after retrieval
         const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
         // Wait for all parameters to be deleted
