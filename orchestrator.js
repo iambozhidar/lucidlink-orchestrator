@@ -166,6 +166,16 @@ async function run() {
         // const parameterValues = ["100,200,300", "110,320,4200", "239,123,41243"];
         const parameterObjects = parameterValues.map(string => parseDelimitedStringToObject(string));
 
+        console.log('Performing cleanup...');
+        // Assuming you want to delete all parameters after retrieval
+        const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
+        // Wait for all parameters to be deleted
+        await Promise.all(deleteParameterPromises);
+
+        await deleteStack();
+        // TODO: await delete completion?
+        console.log('Cleanup done');
+
         // print results
         const jsonOutput = process.argv.includes('--json');
         if (jsonOutput) {
@@ -181,16 +191,6 @@ async function run() {
                 );
             });
         }
-
-        console.log('Performing cleanup...');
-        // Assuming you want to delete all parameters after retrieval
-        const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
-        // Wait for all parameters to be deleted
-        await Promise.all(deleteParameterPromises);
-
-        await deleteStack();
-        // TODO: await delete completion?
-        console.log('Cleanup done');
     } catch (error) {
         console.error('Error:', error);
     }
