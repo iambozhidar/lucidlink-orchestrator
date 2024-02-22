@@ -4,11 +4,11 @@
 TIMEFORMAT='%3R'
 
 time_ms() {
-    # Use the 'time' command to measure the real time in seconds; redirect stderr to stdout
+    # Use 'time' to measure the real time in seconds ('time' writes in stderr, so redirect to stdout)
     local time_sec
     time_sec=$( { time eval "$1"; } 2>&1 )
 
-    # return the time, converted to milliseconds and rounded
+    # Return the time, converted in milliseconds and rounded
     echo "$time_sec * 1000" | bc | xargs printf "%.0f\n"
 }
 
@@ -24,12 +24,12 @@ copy_time_ms=$(time_ms "cp -r source/* destination/")
 echo "Deleting files from source..."
 deletion_time_ms=$(time_ms "rm -rf source/*")
 
-# Print real time for each operation in milliseconds
+# Print time in milliseconds for each operation
 echo "Time to create files (ms): $creation_time_ms"
 echo "Time to copy files (ms): $copy_time_ms"
 echo "Time to delete files (ms): $deletion_time_ms"
 
-# Get instance id from metadata and write results to SSM parameter with the id as its name
-# The value will be in the format "instance-id: i-1234567890abcdef0" so we 'cut' the second part
+# Get instance id from metadata and write time results to SSM with the id as the parameter's name
+# The id value will be in the format "instance-id: i-1234567890abcdef0" so we 'cut' to the second part
 instance_id=$(ec2-metadata -i | cut -d " " -f 2)
 aws ssm put-parameter --name "$instance_id" --value "$creation_time_ms,$copy_time_ms,$deletion_time_ms" --type "String" --overwrite
