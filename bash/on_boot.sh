@@ -15,24 +15,21 @@ time_ms() {
 # Create source and destination directories
 mkdir -p source destination
 
-# Generate 1,000 files in source directory
 echo "Creating 1,000 files in source directory..."
 creation_time_ms=$(time_ms "for ((i=1; i<=1000; i++)); do touch \"source/file\$i.txt\"; done")
 
-# Copy files from source to destination
 echo "Copying files from source to destination..."
 copy_time_ms=$(time_ms "cp -r source/* destination/")
 
-# Delete files from source
 echo "Deleting files from source..."
 deletion_time_ms=$(time_ms "rm -rf source/*")
 
-# Print real time for each operation in seconds
+# Print real time for each operation in milliseconds
 echo "Time to create files (ms): $creation_time_ms"
 echo "Time to copy files (ms): $copy_time_ms"
 echo "Time to delete files (ms): $deletion_time_ms"
 
-# The value will be in the format "instance-id: i-1234567890abcdef0"
-# So, we use cut to extract the second part (the actual instance ID)
+# Get instance id from metadata and write results to SSM parameter with the id as its name
+# The value will be in the format "instance-id: i-1234567890abcdef0" so we 'cut' the second part
 instance_id=$(ec2-metadata -i | cut -d " " -f 2)
 aws ssm put-parameter --name "$instance_id" --value "$creation_time_ms,$copy_time_ms,$deletion_time_ms" --type "String" --overwrite
