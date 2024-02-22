@@ -29,10 +29,16 @@ function sleep(ms) { //TODO: rework this to 'retry' and include try/catch logic
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Retries the async execute function until it succeeds.
+ * @param {number} intervalMs - The interval in milliseconds to wait between retries.
+ * @param {Function} execute - An async function that returns a Promise.
+ * @returns {Promise<*>} The resolved value of the execute function.
+ */
 async function retryUntilDone(intervalMs, execute) {
     while (true) {
         try {
-            return execute();
+            return await execute();
         } catch (error) {
             //TODO: when does this end and we consider it as a fatal error?
             await sleep(5000);
@@ -152,7 +158,7 @@ async function run() {
         const asgName = await waitForStackCompletion();
         const instanceIds = await getEC2InstanceIDFromStack(asgName);
 
-        console.log('Waiting for results from EC2 instances: ', instanceIds);
+        console.log('Waiting for results from EC2 instances... ', instanceIds);
         // Create a promise for each instance ID to wait for its parameter
         const parameterPromises = instanceIds.map(instanceId => waitForParameter(instanceId));
         // Wait for all parameters to be retrieved
@@ -166,7 +172,6 @@ async function run() {
             console.log('Printing results in JSON format:');
             console.log(JSON.stringify(parameterObjects, null, 2));
         } else {
-            console.log('Printing results in human-readable format:');
             parameterObjects.forEach((results, index) => {
                 console.log(
                     `Machine ${index + 1} Results:
