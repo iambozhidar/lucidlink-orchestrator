@@ -22,7 +22,6 @@ const ssmClient = new SSMClient({region: awsRegion});
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
 const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
-const templateFilePath = path.join(__dirname, "vm_stack.yaml");
 const stackName = "ChildStack";
 
 function sleep(ms) { //TODO: rework this to 'retry' and include try/catch logic
@@ -68,10 +67,18 @@ async function deleteParameter(parameterName) {
 }
 
 async function launchStack() {
+    const templateFilePath = path.join(__dirname, "vm_stack.yaml");
+    let templateContent = fs.readFileSync(templateFilePath, "utf8");
+
+    const bootScriptFilePath = path.join(__dirname, 'bash', 'on_boot.sh');
+    const bootScriptContent = fs.readFileSync(bootScriptFilePath, { encoding: 'utf-8' });
+    const indentedBootScript = bootScriptContent.split('\n').map(line => `          ${line}`).join('\n');
+    const templateContentWithScript = templateContent.replace('${BootScriptContent}', indentedBootScript);
+
     // Create the CloudFormation stack
     const createStackCommand = new CreateStackCommand({
         StackName: stackName,
-        TemplateBody: fs.readFileSync(templateFilePath, "utf8"),
+        TemplateBody: templateContentWithScript,
         Capabilities: ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"], // Required for creating IAM resources and named IAM resources
         OnFailure: "DELETE",
         Parameters: [

@@ -20,7 +20,6 @@ mkdir -p source destination
 echo "Creating 1,000 files in source directory..."
 create_output=$( { time (for ((i=1; i<=1000; i++)); do touch "source/file$i.txt"; done;) ; } 2>&1 )
 create_real=$(echo "$create_output" | grep real | awk '{print $2}')
-
 # Convert create_real to total seconds
 creation_time_ms=$(convert_time_str_to_ms $create_real)
 
@@ -28,7 +27,6 @@ creation_time_ms=$(convert_time_str_to_ms $create_real)
 echo "Copying files from source to destination..."
 copy_output=$( { time (cp -r source/* destination/;) ; } 2>&1 )
 copy_real=$(echo "$copy_output" | grep real | awk '{print $2}')
-
 # Convert copy_real to total seconds
 copy_time_ms=$(convert_time_str_to_ms $copy_real)
 
@@ -36,7 +34,6 @@ copy_time_ms=$(convert_time_str_to_ms $copy_real)
 echo "Deleting files from source..."
 delete_output=$( { time (rm -rf source/*;) ; } 2>&1 )
 delete_real=$(echo "$delete_output" | grep real | awk '{print $2}')
-
 # Convert delete_real to total seconds
 deletion_time_ms=$(convert_time_str_to_ms $delete_real)
 
