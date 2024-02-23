@@ -60,7 +60,6 @@ Resources:
       ImageId: !Ref AMIId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref ChildInstanceProfile
-      KeyName: "key-pair_default" # TODO: remove? or pass it as a parameter
       UserData:
         Fn::Base64: !Sub |
 ${BootScriptContent}
