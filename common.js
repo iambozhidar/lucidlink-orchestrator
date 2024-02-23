@@ -1,4 +1,12 @@
-// utils.js
+// common.js
+
+class InstanceResults {
+    constructor(creationTimeMs, copyTimeMs, deletionTimeMs) {
+        this.creationTimeMs = creationTimeMs;
+        this.copyTimeMs = copyTimeMs;
+        this.deletionTimeMs = deletionTimeMs;
+    }
+}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -21,4 +29,4 @@ async function retryUntilDone(intervalMs, execute) {
     }
 }
 
-module.exports = { sleep, retryUntilDone };
+module.exports = {InstanceResults, sleep, retryUntilDone};

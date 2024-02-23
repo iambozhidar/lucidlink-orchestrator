@@ -9,7 +9,7 @@ const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/
 const path = require("path");
 const fs = require("fs");
 
-const {sleep} = require('./utils');
+const {sleep} = require('./common');
 
 const awsRegion = process.env.AWS_REGION;
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
