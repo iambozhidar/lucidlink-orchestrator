@@ -32,8 +32,9 @@ function parseParameterToResults(parameterValue) {
     return new InstanceResults(creationTimeMs, copyTimeMs, deletionTimeMs);
 }
 
-function cleanupChildResults(instanceIds) {
-    instanceIds.map(instanceId => deleteParameter(instanceId));
+async function cleanupChildResults(instanceIds) {
+    const deletePromises = instanceIds.map(instanceId => deleteParameter(instanceId));
+    await Promise.all(deletePromises);
 }
 
 async function deleteParameter(parameterName) {
