@@ -6,8 +6,8 @@ const {
     hasStackFailed,
     getInstanceIDsFromStack,
     deleteStack
-} = require('./child-stack-formation');
-const {waitForChildResults, cleanupChildResults} = require('./child-results');
+} = require('./src/child-stack-formation');
+const {waitForChildResults, cleanupChildResults} = require('./src/child-results');
 
 async function main() {
     try {
