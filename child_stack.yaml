@@ -8,12 +8,11 @@ Parameters:
   InstanceType:
     Type: String
     Description: EC2 instance type
-  NumberOfVMs:
+  NumberOfInstances:
     Type: Number
-    Description: Number of VM instances to launch
+    Description: Number of EC2 instances to launch
 
 Resources:
-
   ChildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -41,21 +40,21 @@ Resources:
       Roles:
         - Ref: ChildRole
 
-  MyAutoScalingGroup:
+  ChildAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      LaunchConfigurationName: !Ref MyLaunchConfiguration
-      MinSize: !Ref NumberOfVMs
-      MaxSize: !Ref NumberOfVMs
-      DesiredCapacity: !Ref NumberOfVMs
+      LaunchConfigurationName: !Ref ChildLaunchConfiguration
+      MinSize: !Ref NumberOfInstances
+      MaxSize: !Ref NumberOfInstances
+      DesiredCapacity: !Ref NumberOfInstances
       VPCZoneIdentifier:
         Ref: SubnetIds
       Tags:
         - Key: Name
-          Value: ChildEC2Instance
+          Value: ChildInstance
           PropagateAtLaunch: true
 
-  MyLaunchConfiguration:
+  ChildLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: !Ref AMIId
@@ -68,6 +67,6 @@ ${BootScriptContent}
 #      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed?
 
 Outputs:
-  AutoScalingGroupName:
+  ChildASGName:
     Description: The name of the Auto Scaling Group
-    Value: !Ref MyAutoScalingGroup
+    Value: !Ref ChildAutoScalingGroup

@@ -13,16 +13,16 @@ const path = require("path");
 require('dotenv').config();
 
 const awsRegion = process.env.AWS_REGION;
-const subnetIds = process.env.SUBNET_IDS;
-const numberOfVMs = parseInt(process.env.NUMBER_OF_VMS, 10);
-const amiId = process.env.AMI_ID;
-const instanceType = process.env.INSTANCE_TYPE;
+const childSubnetIds = process.env.CHILD_SUBNET_IDS;
+const childAmiId = process.env.CHILD_AMI_ID;
+const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
+const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
 
 const ssmClient = new SSMClient({region: awsRegion});
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
 const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
-const stackName = "ChildStack";
+const stackName = `ChildStack-${Date.now()}`;
 
 function sleep(ms) { //TODO: rework this to 'retry' and include try/catch logic
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -67,7 +67,7 @@ async function deleteParameter(parameterName) {
 }
 
 async function launchStack() {
-    const templateFilePath = path.join(__dirname, "vm_stack.yaml");
+    const templateFilePath = path.join(__dirname, "child_stack.yaml");
     let templateContent = fs.readFileSync(templateFilePath, "utf8");
 
     const bootScriptFilePath = path.join(__dirname, 'bash', 'on_boot.sh');
@@ -84,19 +84,19 @@ async function launchStack() {
         Parameters: [
             {
                 ParameterKey: 'SubnetIds',
-                ParameterValue: subnetIds
+                ParameterValue: childSubnetIds
             },
             {
                 ParameterKey: "AMIId",
-                ParameterValue: amiId
+                ParameterValue: childAmiId
             },
             {
                 ParameterKey: "InstanceType",
-                ParameterValue: instanceType
+                ParameterValue: childInstanceType
             },
             {
-                ParameterKey: "NumberOfVMs",
-                ParameterValue: numberOfVMs
+                ParameterKey: "NumberOfInstances",
+                ParameterValue: numberOfChildInstances
             }
         ]
     });
@@ -114,7 +114,7 @@ async function waitForStackCompletion() {
         stackStatus = Stacks[0].StackStatus;
         if (stackStatus === "CREATE_COMPLETE") {
             console.log(`Stack ${stackName} creation complete.`);
-            return Stacks[0].Outputs.find(output => output.OutputKey === "AutoScalingGroupName").OutputValue;
+            return Stacks[0].Outputs.find(output => output.OutputKey === "ChildASGName").OutputValue;
         } else if (stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE") {
             throw new Error(`Stack creation failed: ${stackStatus}`);
         }
