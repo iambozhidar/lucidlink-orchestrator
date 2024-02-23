@@ -197,11 +197,6 @@ async function run() {
                 );
             });
         }
-
-        Promise.allSettled(deleteParameterPromises).then(results => {
-            // Handle results, which includes both fulfilled and rejected promises
-            console.log("All delete operations attempted:", results);
-        });
     } catch (error) {
         console.error('Error:', error);
     }
