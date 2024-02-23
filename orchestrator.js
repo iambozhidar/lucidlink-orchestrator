@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const {
-    createAndAwaitStackCompletion,
+    createAndWaitForStackCompletion,
     hasStackFailed,
     getInstanceIDsFromStack,
     deleteStack
@@ -13,7 +13,7 @@ async function main() {
     try {
         console.log('Creating the CloudFormation stack with child instances...');
         const childStackName = `ChildStack-${Date.now()}`;
-        const childStack = await createAndAwaitStackCompletion(childStackName);
+        const childStack = await createAndWaitForStackCompletion(childStackName);
         if (hasStackFailed(childStack)) {
             throw new Error(`Stack creation failed: ${childStack}`);
         }

@@ -20,7 +20,7 @@ const childAmiId = process.env.CHILD_AMI_ID;
 const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
 const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
 
-async function createAndAwaitStackCompletion(childStackName) {
+async function createAndWaitForStackCompletion(childStackName) {
     const templateFilePath = path.join(__dirname, "child_stack.yaml");
     const templateContent = fs.readFileSync(templateFilePath, "utf8");
 
@@ -92,4 +92,4 @@ async function deleteStack(stackName) {
     await cloudFormationClient.send(deleteCommand);
 }
 
-module.exports = {createAndAwaitStackCompletion, hasStackFailed, getInstanceIDsFromStack, deleteStack};
+module.exports = {createAndWaitForStackCompletion, hasStackFailed, getInstanceIDsFromStack, deleteStack};
