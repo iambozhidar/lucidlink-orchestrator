@@ -58,7 +58,7 @@ async function createAndAwaitStackCompletion(childStackName) {
     await cloudFormationClient.send(createStackCommand);
 
     // await for stack completion for 10 minutes
-    return await retryUntilDone(5000, 120, "Waiting for stack completion failed.",
+    return await retryUntilDone(5000, 120, "Waiting for child stack completion failed.",
         async () => {
             const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: childStackName}));
             const stack = Stacks[0];

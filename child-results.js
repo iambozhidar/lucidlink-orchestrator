@@ -10,13 +10,9 @@ async function waitForChildResults(instanceIds) {
     return parameterValues.map(value => parseParameterToResults(value));
 }
 
-function cleanupChildResults(instanceIds) {
-    instanceIds.map(instanceId => deleteParameter(instanceId));
-}
-
 async function waitForParameter(parameterName) {
     // await for parameter for 5 minutes
-    return await retryUntilDone(3000, 100, "Fetching SSM parameter failed.",
+    return await retryUntilDone(3000, 100, "Fetching SSM parameter for child results failed.",
         async () => {
             const params = new GetParameterCommand({
                 Name: parameterName,
@@ -33,6 +29,10 @@ function parseParameterToResults(parameterValue) {
     const copyTimeMs = parseInt(measurements[1], 10);
     const deletionTimeMs = parseInt(measurements[2], 10);
     return new InstanceResults(creationTimeMs, copyTimeMs, deletionTimeMs);
+}
+
+function cleanupChildResults(instanceIds) {
+    instanceIds.map(instanceId => deleteParameter(instanceId));
 }
 
 async function deleteParameter(parameterName) {
