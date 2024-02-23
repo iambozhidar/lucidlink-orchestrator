@@ -22,7 +22,7 @@ echo "Copying files from source to destination..."
 copy_time_ms=$(time_ms "cp -r source/* destination/")
 
 echo "Deleting files from source..."
-deletion_time_ms=$(time_ms "rm -rf source/*")
+deletion_time_ms=$(time_ms "{ rm -rf source/*; rm -rf destination/*; }")
 
 # Print time in milliseconds for each operation
 echo "Time to create files (ms): $creation_time_ms"
