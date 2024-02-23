@@ -4,18 +4,23 @@ const {
     DeleteStackCommand,
     DescribeStacksCommand
 } = require("@aws-sdk/client-cloudformation");
+const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/client-auto-scaling");
+
 const path = require("path");
 const fs = require("fs");
+
 const {sleep} = require('./utils');
 
-const cloudFormationClient = new CloudFormationClient({region: process.env.AWS_REGION});
+const awsRegion = process.env.AWS_REGION;
+const cloudFormationClient = new CloudFormationClient({region: awsRegion});
+const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
 const childSubnetIds = process.env.CHILD_SUBNET_IDS;
 const childAmiId = process.env.CHILD_AMI_ID;
 const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
 const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
 
-async function createAndGetStack(stackName) {
+async function createAndAwaitStackCompletion(childStackName) {
     const templateFilePath = path.join(__dirname, "child_stack.yaml");
     const templateContent = fs.readFileSync(templateFilePath, "utf8");
 
@@ -27,7 +32,7 @@ async function createAndGetStack(stackName) {
 
     // Create the CloudFormation stack
     const createStackCommand = new CreateStackCommand({
-        StackName: stackName,
+        StackName: childStackName,
         TemplateBody: templateContentWithScript,
         Capabilities: ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"], // Required for creating named IAM resources
         OnFailure: "DELETE",
@@ -55,7 +60,7 @@ async function createAndGetStack(stackName) {
     // await for stack completion and return the stack or throw error if failed
     let stackStatus = "CREATE_IN_PROGRESS";
     while (stackStatus === "CREATE_IN_PROGRESS") {
-        const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: stackName}));
+        const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: childStackName}));
         stackStatus = Stacks[0].StackStatus;
         if (stackStatus === "CREATE_COMPLETE") {
             return Stacks[0];
@@ -66,8 +71,13 @@ async function createAndGetStack(stackName) {
     }
 }
 
-function getAsgNameFromStack(stack) {
-    return stack.Outputs.find(output => output.OutputKey === "ChildASGName").OutputValue
+async function getEC2InstanceIDsFromStack(childStack) {
+    const asgName = childStack.Outputs.find(output => output.OutputKey === "ChildASGName").OutputValue;
+    // Get ASG details and map instance ids
+    const {AutoScalingGroups} = await autoScalingClient.send(new DescribeAutoScalingGroupsCommand({
+        AutoScalingGroupNames: [asgName]
+    }));
+    return AutoScalingGroups[0].Instances.map(instance => instance.InstanceId);
 }
 
 async function deleteStack(stackName) {
@@ -75,4 +85,4 @@ async function deleteStack(stackName) {
     await cloudFormationClient.send(deleteCommand);
 }
 
-module.exports = {createAndGetStack, getAsgNameFromStack, deleteStack};
+module.exports = {createAndAwaitStackCompletion, getEC2InstanceIDsFromStack, deleteStack};

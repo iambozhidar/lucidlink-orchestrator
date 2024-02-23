@@ -2,14 +2,11 @@
 require('dotenv').config();
 
 const {SSMClient, GetParameterCommand, DeleteParameterCommand} = require("@aws-sdk/client-ssm");
-const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/client-auto-scaling");
 
 const {retryUntilDone} = require('./utils');
-const {createAndGetStack, getAsgNameFromStack, deleteStack} = require('./child-stack-formation');
+const {createAndAwaitStackCompletion, getEC2InstanceIDsFromStack, deleteStack} = require('./child-stack-formation');
 
-const awsRegion = process.env.AWS_REGION;
-const ssmClient = new SSMClient({region: awsRegion});
-const autoScalingClient = new AutoScalingClient({region: awsRegion});
+const ssmClient = new SSMClient({region: process.env.AWS_REGION});
 
 async function waitForParameter(parameterName) {
     return await retryUntilDone(5000, async () => {
@@ -32,14 +29,6 @@ async function deleteParameter(parameterName) {
     });
 }
 
-async function getEC2InstanceIDsFromAsg(asgName) {
-    // Get ASG details and map instance ids
-    const {AutoScalingGroups} = await autoScalingClient.send(new DescribeAutoScalingGroupsCommand({
-        AutoScalingGroupNames: [asgName]
-    }));
-    return AutoScalingGroups[0].Instances.map(instance => instance.InstanceId);
-}
-
 function parseDelimitedStringToObject(delimitedString) {
     const values = delimitedString.split(',');
     const creationTimeMs = parseInt(values[0], 10);
@@ -59,10 +48,9 @@ class MachineResults {
 async function main() {
     try {
         console.log('Creating the CloudFormation stack with child instances...');
-        const stackName = `ChildStack-${Date.now()}`;
-        const stack = await createAndGetStack(stackName);
-        const asgName = getAsgNameFromStack(stack);
-        const childInstanceIds = await getEC2InstanceIDsFromAsg(asgName);
+        const childStackName = `ChildStack-${Date.now()}`;
+        const childStack = await createAndAwaitStackCompletion(childStackName);
+        const childInstanceIds = await getEC2InstanceIDsFromStack(childStack);
 
         console.log('Child EC2 instances created: ', childInstanceIds);
         console.log('Waiting for results... ');
@@ -76,7 +64,7 @@ async function main() {
         console.log('Got results. Shutting down instances and deleting resources...');
         // Don't wait for result from deletion TODO: handle them somehow? what if they fail?
         childInstanceIds.map(instanceId => deleteParameter(instanceId));
-        await deleteStack(stackName); //TODO: all try/catch handlers and console logs should be in main
+        await deleteStack(childStackName); //TODO: all try/catch handlers and console logs should be in main
         // TODO: await delete completion? how will we know if deletion fails?
         console.log('Cleanup done.');
 
