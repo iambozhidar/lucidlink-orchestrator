@@ -9,7 +9,7 @@ const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/
 const path = require("path");
 const fs = require("fs");
 
-const {sleep} = require('./common');
+const {retryUntilDone} = require("./common");
 
 const awsRegion = process.env.AWS_REGION;
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
@@ -57,21 +57,27 @@ async function createAndAwaitStackCompletion(childStackName) {
     });
     await cloudFormationClient.send(createStackCommand);
 
-    // await for stack completion and return the stack or throw error if failed
-    let stackStatus = "CREATE_IN_PROGRESS";
-    while (stackStatus === "CREATE_IN_PROGRESS") {
-        const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: childStackName}));
-        stackStatus = Stacks[0].StackStatus;
-        if (stackStatus === "CREATE_COMPLETE") {
-            return Stacks[0];
-        } else if (stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE") {
-            throw new Error(`Stack creation failed: ${stackStatus}`);
-        }
-        await sleep(5000);
-    }
+    // await for stack completion for 10 minutes
+    return await retryUntilDone(5000, 120, "Waiting for stack completion failed.",
+        async () => {
+            const {Stacks} = await cloudFormationClient.send(new DescribeStacksCommand({StackName: childStackName}));
+            const stack = Stacks[0];
+            const stackStatus = stack.StackStatus;
+            // return the stack when creation either succeeded or failed.
+            if (stackStatus === "CREATE_COMPLETE" || hasStackFailed(stack)) {
+                return stack;
+            } else {
+                throw new Error(`Still waiting for stack completion: ${stackStatus}`)
+            }
+        });
 }
 
-async function getEC2InstanceIDsFromStack(childStack) {
+function hasStackFailed(stack) {
+    const stackStatus = stack.StackStatus;
+    return stackStatus.endsWith("_FAILED") || stackStatus === "ROLLBACK_COMPLETE";
+}
+
+async function getInstanceIDsFromStack(childStack) {
     const asgName = childStack.Outputs.find(output => output.OutputKey === "ChildASGName").OutputValue;
     // Get ASG details and map instance ids
     const {AutoScalingGroups} = await autoScalingClient.send(new DescribeAutoScalingGroupsCommand({
@@ -85,4 +91,4 @@ async function deleteStack(stackName) {
     await cloudFormationClient.send(deleteCommand);
 }
 
-module.exports = {createAndAwaitStackCompletion, getEC2InstanceIDsFromStack, deleteStack};
+module.exports = {createAndAwaitStackCompletion, hasStackFailed, getInstanceIDsFromStack, deleteStack};

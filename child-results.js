@@ -15,14 +15,16 @@ function cleanupChildResults(instanceIds) {
 }
 
 async function waitForParameter(parameterName) {
-    return await retryUntilDone(5000, async () => {
-        const params = new GetParameterCommand({
-            Name: parameterName,
-            WithDecryption: false
+    // await for parameter for 5 minutes
+    return await retryUntilDone(3000, 100, "Fetching SSM parameter failed.",
+        async () => {
+            const params = new GetParameterCommand({
+                Name: parameterName,
+                WithDecryption: false
+            });
+            const {Parameter} = await ssmClient.send(params);
+            return Parameter.Value;
         });
-        const {Parameter} = await ssmClient.send(params);
-        return Parameter.Value;
-    });
 }
 
 function parseParameterToResults(parameterValue) {
@@ -34,13 +36,11 @@ function parseParameterToResults(parameterValue) {
 }
 
 async function deleteParameter(parameterName) {
-    return await retryUntilDone(5000, async () => {
-        const deleteParams = {
-            Name: parameterName
-        };
-        const deleteCommand = new DeleteParameterCommand(deleteParams);
-        return await ssmClient.send(deleteCommand);
-    });
+    const deleteParams = {
+        Name: parameterName
+    };
+    const deleteCommand = new DeleteParameterCommand(deleteParams);
+    return await ssmClient.send(deleteCommand);
 }
 
 module.exports = {waitForChildResults, cleanupChildResults};
