@@ -62,7 +62,7 @@ async function deleteParameter(parameterName) {
             Name: parameterName
         };
         const deleteCommand = new DeleteParameterCommand(deleteParams);
-        await ssmClient.send(deleteCommand);
+        return await ssmClient.send(deleteCommand);
     });
 }
 
@@ -177,7 +177,6 @@ async function run() {
         // Assuming you want to delete all parameters after retrieval
         const deleteParameterPromises = instanceIds.map(instanceId => deleteParameter(instanceId));
         // Wait for all parameters to be deleted
-        await Promise.all(deleteParameterPromises);
 
         await deleteStack();
         // TODO: await delete completion?
@@ -198,6 +197,11 @@ async function run() {
                 );
             });
         }
+
+        Promise.allSettled(deleteParameterPromises).then(results => {
+            // Handle results, which includes both fulfilled and rejected promises
+            console.log("All delete operations attempted:", results);
+        });
     } catch (error) {
         console.error('Error:', error);
     }
