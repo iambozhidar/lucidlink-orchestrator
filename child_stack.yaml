@@ -62,7 +62,7 @@ Resources:
       IamInstanceProfile: !Ref ChildInstanceProfile
       UserData:
         Fn::Base64: !Sub |
-${BootScriptContent}
+${BootScriptContent} # this is replaced at runtime
 #      SecurityGroupIds: ["sg-0a6c4c517135364fb"] # TODO: is this needed?
 
 Outputs:
