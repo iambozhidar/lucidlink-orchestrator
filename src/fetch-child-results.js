@@ -11,8 +11,8 @@ async function waitForChildResults(instanceIds) {
 }
 
 async function waitForParameter(parameterName) {
-    // await for parameter for 5 minutes
-    return await retryUntilDone(3000, 100,
+    // await for parameter for up to 3 minutes
+    return await retryUntilDone(3000, 60,
         `Fetching SSM parameter ${parameterName} failed.`,
         async () => {
             const params = new GetParameterCommand({
