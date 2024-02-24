@@ -15,12 +15,7 @@ const awsRegion = process.env.AWS_REGION;
 const cloudFormationClient = new CloudFormationClient({region: awsRegion});
 const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
-const childSubnetIds = process.env.CHILD_SUBNET_IDS;
-const childAmiId = process.env.CHILD_AMI_ID;
-const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
-const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
-
-async function createAndWaitForStackCompletion(childStackName) {
+async function createAndWaitForStackCompletion(childStackName, childSubnetIds, childAmiId, childInstanceType, numberOfChildInstances) {
     const templateFilePath = path.join(__dirname, "child_stack.yaml");
     const templateContent = fs.readFileSync(templateFilePath, "utf8");
 

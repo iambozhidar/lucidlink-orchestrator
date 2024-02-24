@@ -10,18 +10,31 @@ const {
 const {waitForChildResults, cleanupChildResults} = require('./src/fetch-child-results');
 const {EC2Client, DescribeSubnetsCommand} = require("@aws-sdk/client-ec2");
 
-const ec2Client = new EC2Client({region: process.env.AWS_REGION});
+async function getAvailableSubnetIds() {
+    const ec2Client = new EC2Client({region: process.env.AWS_REGION});
+    const describeSubnetsCommand = new DescribeSubnetsCommand({});
+    const response = await ec2Client.send(describeSubnetsCommand);
+    return response.Subnets.map(subnet => subnet.SubnetId);
+}
+
+let childSubnetIds = process.env.CHILD_SUBNET_IDS;
+const childAmiId = process.env.CHILD_AMI_ID;
+const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
+const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
 
 async function main() {
     try {
-        console.log('Fetching subnets...');
-        const describeSubnetsCommand = new DescribeSubnetsCommand({});
-        const response = await ec2Client.send(describeSubnetsCommand);
-        console.log('Got response', response);
+        // if no explicit subnet ids are provided - fetch available ones dynamically
+        if (!childSubnetIds || childSubnetIds.trim() === '') {
+            console.log('Fetching available subnets...');
+            const availableSubnetIds = await getAvailableSubnetIds();
+            childSubnetIds = availableSubnetIds.join(',');
+        }
 
-        console.log('Creating the CloudFormation stack with child instances...');
+        console.log('Creating the stack of child instances...');
         const childStackName = `ChildStack-${Date.now()}`;
-        const childStack = await createAndWaitForStackCompletion(childStackName);
+        const childStack = await createAndWaitForStackCompletion(childStackName, childSubnetIds,
+            childAmiId, childInstanceType, numberOfChildInstances);
         if (hasStackFailed(childStack)) {
             throw new Error(`Stack creation failed: ${childStack}`);
         }
