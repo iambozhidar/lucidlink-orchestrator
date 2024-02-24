@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to launch the child EC2 instances.'
+
 Parameters:
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
@@ -25,7 +28,7 @@ Resources:
             Action: "sts:AssumeRole"
       Path: "/"
       Policies:
-        - PolicyName: InlinePolicyForSsmPutParameter
+        - PolicyName: SsmPutParameter
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
