@@ -30,11 +30,12 @@ main() {
     echo "Time to copy files (ms): $copy_time_ms"
     echo "Time to delete files (ms): $deletion_time_ms"
 
-    # Get instance id from metadata and write time results to SSM with the id as the parameter's name
-    # The id value will be in the format "instance-id: i-1234567890abcdef0" so we 'cut' to the second part
+    # Get instance id from metadata and write time results under SSM parameter with the id as name
+    # The id from metadata will be in the format of "instance-id: i-1234567890abcdef0" so we 'cut' to the second part
     instance_id=$(ec2-metadata -i | cut -d " " -f 2)
     aws ssm put-parameter --name "$instance_id" --value "$creation_time_ms,$copy_time_ms,$deletion_time_ms" --type "String" --overwrite
     echo "Time results written to SSM parameter: $instance_id"
 }
 
+# Write stdout and stderr to a log file to enable investigations when problems occur
 main "$@" > /var/log/child_boot.log 2>&1

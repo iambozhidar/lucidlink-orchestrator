@@ -19,6 +19,7 @@ async function createAndWaitForStackCompletion(childStackName, childSubnetIds, c
 
     const bootScriptFilePath = path.join(__dirname, 'child_boot.sh');
     const bootScriptContent = fs.readFileSync(bootScriptFilePath, {encoding: 'utf-8'});
+
     // IMPORTANT: indent the script so that it matches the .yaml template requirements
     const indentedBootScript = bootScriptContent.split('\n').map(line => `          ${line}`).join('\n');
     const templateContentWithScript = templateContent.replace('${BootScriptContent}', indentedBootScript);

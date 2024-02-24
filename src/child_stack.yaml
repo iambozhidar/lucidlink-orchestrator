@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CloudFormation template to launch the child EC2 instances.'
+Description: 'CloudFormation template to launch child EC2 instances.'
 
 Parameters:
   SubnetIds:
@@ -63,7 +63,7 @@ Resources:
       ImageId: !Ref AMIId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref ChildInstanceProfile
-      UserData:
+      UserData: # run the script with file operations and measurements upon boot
         Fn::Base64: !Sub |
 ${BootScriptContent} # this is replaced at runtime
 

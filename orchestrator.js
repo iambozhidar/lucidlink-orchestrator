@@ -33,7 +33,7 @@ async function main() {
         }
 
         console.log('Creating the stack of child instances...');
-        const childStackName = `ChildStack-${Date.now()}`;
+        const childStackName = `ChildStack-${Date.now()}`; // add timestamp to name for uniqueness
         const childStack = await createAndWaitForStackCompletion(childStackName, childSubnetIds,
             childAmiId, childInstanceType, numberOfChildInstances);
         if (hasStackFailed(childStack)) {

@@ -15,10 +15,10 @@ function sleep(ms) {
 }
 
 /**
- * Retries the async execute function until it succeeds.
+ * Retries the async 'execute' function until it succeeds.
  * @param {number} intervalMs - The interval in milliseconds to wait between retries.
  * @param {number} maxRetries - The maximum retries for the execute function. Error is thrown if exceeded.
- * @param {string} errorMessage - The error message to add in the Error if the maxRetries are exceeded.
+ * @param {string} errorMessage - The message to add in the Error if maxRetries are exceeded.
  * @param {Function} execute - An async function that returns a Promise.
  * @returns {Promise<*>} The resolved value of the execute function.
  */

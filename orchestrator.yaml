@@ -61,7 +61,7 @@ Resources:
       Tags:
         - Key: Name
           Value: Orchestrator
-      UserData:
+      UserData: # automatically download and configure the solution upon boot
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
