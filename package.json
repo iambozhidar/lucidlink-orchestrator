@@ -15,6 +15,7 @@
   "devDependencies": {
     "@aws-sdk/client-auto-scaling": "3.515.0",
     "@aws-sdk/client-cloudformation": "3.515.0",
+    "@aws-sdk/client-ec2": "^3.521.0",
     "@aws-sdk/client-ssm": "3.515.0",
     "dotenv": "16.4.5"
   }

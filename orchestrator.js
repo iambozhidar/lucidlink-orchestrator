@@ -8,9 +8,17 @@ const {
     deleteStack
 } = require('./src/form-child-stack');
 const {waitForChildResults, cleanupChildResults} = require('./src/fetch-child-results');
+const {EC2Client, DescribeSubnetsCommand} = require("@aws-sdk/client-ec2");
+
+const ec2Client = new EC2Client({region: process.env.AWS_REGION});
 
 async function main() {
     try {
+        console.log('Fetching subnets...');
+        const describeSubnetsCommand = new DescribeSubnetsCommand({});
+        const response = await ec2Client.send(describeSubnetsCommand);
+        console.log('Got response', response);
+
         console.log('Creating the CloudFormation stack with child instances...');
         const childStackName = `ChildStack-${Date.now()}`;
         const childStack = await createAndWaitForStackCompletion(childStackName);

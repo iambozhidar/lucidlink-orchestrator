@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to launch the orchestrator EC2 instance.'
+
+Parameters:
+  AMIId:
+    Type: AWS::EC2::Image::Id
+    Description: AMI ID for the orchestrator instance
+    Default: ami-02d0a1cbe2c3e5ae4
+  InstanceType:
+    Type: String
+    Description: EC2 instance type for the orchestrator
+    Default: t3.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+#  KeyPairName: TODO: remove all commented code
+#    Type: AWS::EC2::KeyPair::KeyName
+#    Description: Key Pair for SSH access
+
+Resources:
+  OrchestratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: "/"
+      Policies:
+        - PolicyName: OrchestratorPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: # permissions needed for launching the stack of child instances
+                  - 'cloudformation:CreateStack'
+                  - 'cloudformation:DeleteStack'
+                  - 'cloudformation:DescribeStacks'
+                  - 'ssm:GetParameter'
+                  - 'ssm:DeleteParameter'
+                  - 'ec2:*'
+                  - 'autoscaling:*'
+                  - 'iam:*'
+                Resource: '*'
+
+  OrchestratorProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: OrchestratorRole
+
+  OrchestratorInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMIId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile:
+        Ref: OrchestratorProfile
+#      KeyName:
+#        Ref: KeyPairName
+      SecurityGroups:
+        - Ref: OrchestratorSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Orchestrator
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y nodejs npm git
+          git clone https://github.com/iambozhidar/lucidlink-orchestrator.git /home/ec2-user/orchestrator
+          cd /home/ec2-user/orchestrator
+          npm install
+
+  OrchestratorSecurityGroup: # needed for EC2 Instance Connect
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0 # TODO: IP can be restricted
+
+Outputs:
+  InstanceId:
+    Description: The Orchestrator Instance ID
+    Value:
+      Ref: OrchestratorInstance
