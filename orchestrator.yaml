@@ -13,9 +13,6 @@ Parameters:
     AllowedValues:
       - t2.micro
       - t3.micro
-#  KeyPairName: TODO: remove all commented code
-#    Type: AWS::EC2::KeyPair::KeyName
-#    Description: Key Pair for SSH access
 
 Resources:
   OrchestratorRole:
@@ -59,8 +56,6 @@ Resources:
       InstanceType: !Ref InstanceType
       IamInstanceProfile:
         Ref: OrchestratorProfile
-#      KeyName:
-#        Ref: KeyPairName
       SecurityGroups:
         - Ref: OrchestratorSecurityGroup
       Tags:
@@ -83,7 +78,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0 # TODO: IP can be restricted
+          CidrIp: 0.0.0.0/0 # TODO?: IP can be restricted
 
 Outputs:
   InstanceId:
