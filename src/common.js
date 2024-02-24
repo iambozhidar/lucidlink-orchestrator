@@ -1,5 +1,7 @@
 // common.js
 
+const AWS_REGION = process.env.AWS_REGION;
+
 class InstanceResults {
     constructor(creationTimeMs, copyTimeMs, deletionTimeMs) {
         this.creationTimeMs = creationTimeMs;
@@ -34,4 +36,4 @@ async function retryUntilDone(intervalMs, maxRetries, errorMessage, execute) {
     throw new Error(`Operation failed after ${attempts} attempts: ${errorMessage}`);
 }
 
-module.exports = {InstanceResults, retryUntilDone};
+module.exports = {AWS_REGION, InstanceResults, retryUntilDone};

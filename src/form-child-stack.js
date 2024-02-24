@@ -5,15 +5,13 @@ const {
     DescribeStacksCommand
 } = require("@aws-sdk/client-cloudformation");
 const {AutoScalingClient, DescribeAutoScalingGroupsCommand} = require("@aws-sdk/client-auto-scaling");
+const {AWS_REGION, retryUntilDone} = require("./common");
+
+const cloudFormationClient = new CloudFormationClient({region: AWS_REGION});
+const autoScalingClient = new AutoScalingClient({region: AWS_REGION});
 
 const path = require("path");
 const fs = require("fs");
-
-const {retryUntilDone} = require("./common");
-
-const awsRegion = process.env.AWS_REGION;
-const cloudFormationClient = new CloudFormationClient({region: awsRegion});
-const autoScalingClient = new AutoScalingClient({region: awsRegion});
 
 async function createAndWaitForStackCompletion(childStackName, childSubnetIds, childAmiId, childInstanceType, numberOfChildInstances) {
     const templateFilePath = path.join(__dirname, "child_stack.yaml");

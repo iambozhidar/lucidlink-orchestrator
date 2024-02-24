@@ -1,7 +1,7 @@
 const {SSMClient, GetParameterCommand, DeleteParameterCommand} = require("@aws-sdk/client-ssm");
-const {InstanceResults, retryUntilDone} = require("./common");
+const {AWS_REGION, InstanceResults, retryUntilDone} = require("./common");
 
-const ssmClient = new SSMClient({region: process.env.AWS_REGION});
+const ssmClient = new SSMClient({region: AWS_REGION});
 
 async function waitForChildResults(instanceIds) {
     // Create a promise for each instance ID to wait for its parameter, then map to InstanceResults objects

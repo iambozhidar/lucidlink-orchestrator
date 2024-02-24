@@ -9,9 +9,10 @@ const {
 } = require('./src/form-child-stack');
 const {waitForChildResults, cleanupChildResults} = require('./src/fetch-child-results');
 const {EC2Client, DescribeSubnetsCommand} = require("@aws-sdk/client-ec2");
+const {AWS_REGION} = require("./src/common");
 
 async function getAvailableSubnetIds() {
-    const ec2Client = new EC2Client({region: process.env.AWS_REGION});
+    const ec2Client = new EC2Client({region: AWS_REGION});
     const describeSubnetsCommand = new DescribeSubnetsCommand({});
     const response = await ec2Client.send(describeSubnetsCommand);
     return response.Subnets.map(subnet => subnet.SubnetId);
