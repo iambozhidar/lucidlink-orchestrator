@@ -1,8 +1,3 @@
 # Dependency directory
 node_modules/
-
-# Environment configuration files
-.env
-.env.test
-
 .DS_Store
