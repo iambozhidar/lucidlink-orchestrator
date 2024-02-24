@@ -34,6 +34,7 @@ main() {
     # The id value will be in the format "instance-id: i-1234567890abcdef0" so we 'cut' to the second part
     instance_id=$(ec2-metadata -i | cut -d " " -f 2)
     aws ssm put-parameter --name "$instance_id" --value "$creation_time_ms,$copy_time_ms,$deletion_time_ms" --type "String" --overwrite
+    echo "Time results written to SSM parameter: $instance_id"
 }
 
 main "$@" > /var/log/child_boot.log 2>&1
