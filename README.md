@@ -5,6 +5,20 @@ Namely, an orchestrator that automates a series of file operations across severa
 environment. The execution time of these operations are measured and transferred to the orchestrator
 which then reports results for each VM.
 
+### Table of Contents
+
+- [High-level overview](#high-level-overview)
+- [File Structure](#file-structure)
+- [Configuration](#configuration)
+- [Running the solution](#running-the-solution)
+    - [Launch the Orchestrator instance](#launch-the-orchestrator-instance)
+    - [Run the script](#run-the-script)
+    - [Output](#output)
+- [Implementation details](#implementation-details)
+    - [Orchestrator script (`orchestrator.js`)](#orchestrator-script-orchestratorjs)
+    - [Child script (`child_boot.sh`)](#child-script-child_bootsh)
+- [Possible Improvements](#possible-improvements)
+
 ---
 
 ## High-level overview
