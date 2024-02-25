@@ -23,6 +23,10 @@ const childAmiId = process.env.CHILD_AMI_ID;
 const childInstanceType = process.env.CHILD_INSTANCE_TYPE;
 const numberOfChildInstances = parseInt(process.env.CHILD_NUMBER_OF_INSTANCES, 10);
 
+if (!childAmiId || childAmiId.trim() === '') throw new Error('CHILD_AMI_ID is missing from environment variables');
+if (!childInstanceType || childInstanceType.trim() === '') throw new Error('CHILD_INSTANCE_TYPE is missing from environment variables');
+if (isNaN(numberOfChildInstances)) throw new Error('CHILD_NUMBER_OF_INSTANCES is missing from environment variables or not a number');
+
 async function main() {
     try {
         // if no explicit subnet ids are provided - fetch available ones dynamically

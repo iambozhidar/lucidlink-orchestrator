@@ -1,6 +1,7 @@
 // common.js
 
 const AWS_REGION = process.env.AWS_REGION;
+if (!AWS_REGION || AWS_REGION.trim() === '') throw new Error('AWS_REGION is missing from environment variables');
 
 class InstanceResults {
     constructor(creationTimeMs, copyTimeMs, deletionTimeMs) {
