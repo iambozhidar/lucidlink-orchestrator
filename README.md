@@ -129,11 +129,12 @@ git clone https://github.com/iambozhidar/lucidlink-orchestrator.git
 
 ### Launch the orchestrator instance
 
-***For out-of-the-box experience, run the solution in the `eu-north-1` region.***
+***Important: For out-of-the-box experience, run the solution in the `eu-north-1` region.***
 
 1. Go to the CloudFormation console in your AWS account and go to 'Create stack'.
 2. Specify `orchestrator.yaml` as the template file by uploading it ('Upload a template file'), and then proceed.
-3. Set the stack name. Optionally, change the default values for AMIId and InstanceType.
+3. Set the stack name. (Optional) If you are in a different region than `eu-north-1`, change the default values for
+   AMIId and InstanceType to ones specific to your region.
 4. Go until the end of the wizard by clicking 'Next', and then acknowledge and 'Submit' at the end.
 5. Wait for the stack to be created. It can take a few minutes.
 
