@@ -1,9 +1,9 @@
 # [LucidLink] Orchestrator Task - Bozhidar Stoyanov
 
 This project provides solution to the problem presented in `Development experience assignment.pdf`.
-Namely, an orchestrator that automates a series of file operations across several virtual machines in an AWS
-environment. The execution times of these operations are measured and transferred to the orchestrator
-which then reports results for each VM.
+Namely, an orchestrator that automates a series of file operations (create, copy, delete) across several
+virtual machines in an AWS environment. The execution times of these operations are measured and transferred
+back to the orchestrator which then reports results for each VM.
 
 ### Table of Contents
 
@@ -27,7 +27,7 @@ The solution is implemented using the following technologies and AWS services:
 
 - ***Node.js*** for implementing the orchestrator script, deployed on the _parent_ instance
 - ***Bash*** for implementing the payload boot script that performs file operations, deployed on _child_ instances
-- ***AWS SSM Parameter Store*** for storing/retrieving the execution time of operations on child instances
+- ***AWS SSM Parameter Store*** for storing/retrieving the execution time results of operations on child instances
 - ***AWS EC2*** for VM instances
 - ***AWS EC2 Auto Scaling*** for launching a fixed number of child instances (3 by default) across multiple AZs/subnets
   for high availability
@@ -123,7 +123,11 @@ machine and run the script.
 
 ***For out-of-the-box experience, run the solution in the `eu-north-1` region.***
 
-As a first step, clone the solution and get hold of the `orchestrator.yaml` file from the root folder.
+As a first step, clone the solution to get hold of the `orchestrator.yaml` file in the root folder.
+
+```shell
+git clone https://github.com/iambozhidar/lucidlink-orchestrator.git
+```
 
 ### Launch the orchestrator instance
 
@@ -144,7 +148,9 @@ After the stack has been successfully created (`CREATE_COMPLETE`), go to the EC2
 2. In the instance terminal, run `ls` to check if the 'orchestrator' folder is already in the user space. If not, you
    may need to wait a bit while the solution is being downloaded by the orchestrator's user data script.
 3. Once it's there, go inside the folder with `cd orchestrator`.
-4. (optional) Modify `.env` if you want custom AWS configurations.
+4. (Optional) Modify `.env` if you want custom AWS configurations.
+    1. Claim ownership of the file `sudo chown ec2-user .env`
+    2. Edit the file with `nano .env`
 5. Start the solution via one of the following commands:
     1. `npm start` or `node orchestrator.js` for human-readable output
     2. `npm start -- --json` or `node orchestrator.js --json` for json output
@@ -241,7 +247,8 @@ this gives the actual time it takes for the file operations to complete includin
 The script's `stdout` and `stderr` streams are logged in a local `/var/log/child_boot.log` file on the child instances
 to enable investigations in case problems occur. This provides good overall detectability, since errors on the parent
 machine will be visible in the console when executed, and problems on child instances will be visible in the local .log
-file. Note: child instances won't be stopped by the parent in case they fail to report results.
+file. Note: child instances won't be stopped by the parent in case they fail to report results;
+you'll need to enable SSH access to child instances to acquire logs.
 
 ---
 
