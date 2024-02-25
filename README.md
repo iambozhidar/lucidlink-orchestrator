@@ -121,8 +121,6 @@ Use CloudFormation and the provided `orchestrator.yaml` template to run the solu
 automatically launch the orchestrator instance and configure the solution so that you can then simply connect to the
 machine and run the script.
 
-***For out-of-the-box experience, run the solution in the `eu-north-1` region.***
-
 As a first step, clone the solution to get hold of the `orchestrator.yaml` file in the root folder.
 
 ```shell
@@ -131,25 +129,27 @@ git clone https://github.com/iambozhidar/lucidlink-orchestrator.git
 
 ### Launch the orchestrator instance
 
-1. Go to the CloudFormation console in your AWS account and go to "Create stack".
-2. Specify `orchestrator.yaml` as the template file by uploading it, and then proceed.
+***For out-of-the-box experience, run the solution in the `eu-north-1` region.***
+
+1. Go to the CloudFormation console in your AWS account and go to 'Create stack'.
+2. Specify `orchestrator.yaml` as the template file by uploading it ('Upload a template file'), and then proceed.
 3. Set the stack name. Optionally, change the default values for AMIId and InstanceType.
 4. Go until the end of the wizard by clicking 'Next', and then acknowledge and 'Submit' at the end.
 5. Wait for the stack to be created. It can take a few minutes.
 
-Alternatively, you can also create a stack with the `orchestrator.yaml` template via AWS CLI.
+Alternatively, you can also create the stack with the `orchestrator.yaml` template via AWS CLI.
 
 ### Run the script
 
-After the stack has been successfully created (`CREATE_COMPLETE`), go to the EC2 console and:
+After the stack has been successfully created (`CREATE_COMPLETE`), go to the EC2 console > 'Instances' and:
 
 1. Connect to the newly created "Orchestrator" instance via Instance Connect
    ('Connect' > 'Connect using EC2 Instance Connect').
-2. In the instance terminal, run `ls` to check if the 'orchestrator' folder is already in the user space. If not, you
+2. In the instance terminal, run `ls` to check if the `orchestrator` folder is already in the user space. If not, you
    may need to wait a bit while the solution is being downloaded by the orchestrator's user data script.
 3. Once it's there, go inside the folder with `cd orchestrator`.
-4. (Optional) Modify `.env` if you want custom AWS configurations.
-    1. Claim ownership of the file `sudo chown ec2-user .env`
+4. (Optional) If you are in a different region than `eu-north-1` or you want custom AWS configurations, modify `.env`:
+    1. Claim ownership of the file via `sudo chown ec2-user .env`
     2. Edit the file with `nano .env`
 5. Start the solution via one of the following commands:
     1. `npm start` or `node orchestrator.js` for human-readable output
